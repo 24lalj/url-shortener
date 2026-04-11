@@ -1,6 +1,7 @@
 import hashlib
 import redis
 import validators
+import os
 from fastapi import FastAPI, HTTPException
 from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -15,8 +16,10 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Redis Cache Layer (Scalable Component)
-cache = redis.Redis(host='redis', port=6379, decode_responses=True)
+# Connect to Render's Redis using the environment variable
+# Fallback to local 'redis' host if the variable isn't found
+redis_url = os.environ.get('REDIS_URL', 'redis://redis:6379')
+cache = redis.Redis.from_url(redis_url, decode_responses=True)
 
 # Intelligent Layer: Spam Detection Keywords
 SPAM_KEYWORDS = ["free", "win", "money", "prize", "gift", "claim", "offer"]
@@ -40,13 +43,16 @@ async def shorten_url(long_url: str):
     if not validators.url(long_url):
         raise HTTPException(status_code=400, detail="Invalid URL format")
 
+    # Your Permanent Render URL
+    base_url = "https://url-shortener-zo8z.onrender.com"
+
     # 1. Detect Spam (but don't block)
     spam_detected = is_spam(long_url)
 
     # 2. Check Cache
     cached_code = cache.get(f"url:{long_url}")
     if cached_code:
-        return {"short_url": f"http://localhost:8000/{cached_code}", "is_spam": spam_detected}
+        return {"short_url": f"{base_url}/{cached_code}", "is_spam": spam_detected}
 
     # 3. Generate Smart Link
     short_code = generate_smart_code(long_url)
@@ -55,7 +61,7 @@ async def shorten_url(long_url: str):
     cache.set(short_code, long_url)
     cache.set(f"url:{long_url}", short_code)
 
-    return {"short_url": f"http://localhost:8000/{short_code}", "is_spam": spam_detected}
+    return {"short_url": f"{base_url}/{short_code}", "is_spam": spam_detected}
 
 @app.get("/{short_code}")
 async def redirect_url(short_code: str):
