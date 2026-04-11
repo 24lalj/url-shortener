@@ -46,8 +46,11 @@
 
             if(!url) return alert("Please enter a URL first!");
 
+            // Updated to use your Render address
+            const serverUrl = "https://url-shortener-zo8z.onrender.com";
+
             try {
-                const response = await fetch(`http://localhost:8000/shorten?long_url=${encodeURIComponent(url)}`, {method:'POST'});
+                const response = await fetch(`${serverUrl}/shorten?long_url=${encodeURIComponent(url)}`, {method:'POST'});
                 const data = await response.json();
 
                 resArea.style.display = 'block';
@@ -62,7 +65,7 @@
                     statusMsg.innerHTML = "✅ <strong>Success:</strong> Smart URL generated successfully:";
                 }
             } catch (e) {
-                alert("Server not responding. Ensure Docker is running.");
+                alert("Server not responding. Ensure the Render service is live.");
             }
         }
 
