@@ -7,7 +7,7 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-# Enable CORS so the browser can talk to the backend 
+# Enable CORS so the browser can talk to the backend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -15,17 +15,17 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Redis Cache Layer (Scalable Component) 
-# Railway uses the service name 'redis' as the hostname 
+# Redis Cache Layer (Scalable Component)
+# 'redis' matches the service name in your docker-compose.yml
 cache = redis.Redis(host='redis', port=6379, decode_responses=True)
 
-# Intelligent Layer: Spam Detection Keywords 
+# Intelligent Layer: Spam Detection Keywords
 SPAM_KEYWORDS = ["free", "win", "money", "prize", "gift", "claim", "offer"]
 
 def is_spam(url: str) -> bool:
     return any(keyword in url.lower() for keyword in SPAM_KEYWORDS)
 
-# Intelligent Layer: Smart URL Generator 
+# Intelligent Layer: Smart URL Generator
 def generate_smart_code(url: str) -> str:
     clean_url = url.replace("https://", "").replace("http://", "").replace("www.", "")
     keyword = clean_url.split('.')[0] 
@@ -43,15 +43,15 @@ async def shorten_url(long_url: str, request: Request):
 
     spam_detected = is_spam(long_url)
     
-    # DYNAMIC LOGIC: This detects your Railway URL automatically
+    # DYNAMIC LOGIC: Detects your Railway URL automatically instead of using localhost
     base_url = str(request.base_url)
 
-    # Check Cache 
+    # 1. Check Cache
     cached_code = cache.get(f"url:{long_url}")
     if cached_code:
         return {"short_url": f"{base_url}{cached_code}", "is_spam": spam_detected}
 
-    # Generate and Store 
+    # 2. Generate and Store
     short_code = generate_smart_code(long_url)
     cache.set(short_code, long_url)
     cache.set(f"url:{long_url}", short_code)
