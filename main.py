@@ -8,7 +8,6 @@ from fastapi.middleware.cors import CORSMiddleware
 
 app = FastAPI()
 
-# Enable CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,10 +15,9 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Redis Connection - matches your docker-compose service name
+# Redis Connection
 cache = redis.Redis(host='redis', port=6379, decode_responses=True)
 
-# Intelligent Layer: Spam Detection
 SPAM_KEYWORDS = ["free", "win", "money", "prize", "gift", "claim", "offer"]
 
 def is_spam(url: str) -> bool:
@@ -31,14 +29,14 @@ def generate_smart_code(url: str) -> str:
     unique_suffix = hashlib.md5(url.encode()).hexdigest()[:4]
     return f"{keyword}-{unique_suffix}"
 
-# --- UPDATED ROUTE TO FIX BLANK SCREEN ---
 @app.get("/")
 async def read_index():
-    # Get the absolute path to ensure Docker finds the file
-    file_path = os.path.join(os.getcwd(), "index.html")
+    # This logic forces the server to look in the exact folder where the code is running
+    base_path = os.path.dirname(os.path.abspath(__file__))
+    file_path = os.path.join(base_path, "index.html")
     if os.path.exists(file_path):
         return FileResponse(file_path)
-    return {"error": "index.html not found in container root"}
+    return {"error": f"File not found at {file_path}. Ensure index.html is in the same folder as main.py"}
 
 @app.post("/shorten")
 async def shorten_url(long_url: str, request: Request):
