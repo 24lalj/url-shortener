@@ -28,35 +28,32 @@
     </div>
 
     <script>
-        async function process() {
-            const url = document.getElementById('urlInput').value;
-            const resArea = document.getElementById('resultArea');
-            const statusMsg = document.getElementById('statusMsg');
-            const finalLink = document.getElementById('finalLink');
+       async function process() {
+    const url = document.getElementById('urlInput').value;
+    const resArea = document.getElementById('resultArea');
+    const statusMsg = document.getElementById('statusMsg');
+    const finalLink = document.getElementById('finalLink');
 
-            if(!url) return alert("Please paste a URL!");
+    if(!url) return alert("Please enter a URL!");
 
-            try {
-                // The '/' prefix makes this work on ANY domain automatically
-                const response = await fetch(`/shorten?long_url=${encodeURIComponent(url)}`, { method: 'POST' });
-                if (!response.ok) throw new Error("Server error");
-                
-                const data = await response.json();
-                resArea.style.display = 'block';
-                finalLink.href = data.short_url;
-                finalLink.innerText = data.short_url;
+    try {
+        // Use relative path so it works on the Railway domain automatically
+        const response = await fetch(`/shorten?long_url=${encodeURIComponent(url)}`, { 
+            method: 'POST' 
+        });
+        
+        if (!response.ok) throw new Error("Server Error");
 
-                if(data.is_spam) {
-                    resArea.className = 'spam-alert';
-                    statusMsg.innerHTML = "⚠️ <strong>Spam Warning:</strong> suspicious content:";
-                } else {
-                    resArea.className = 'safe-alert';
-                    statusMsg.innerHTML = "✅ <strong>Success:</strong> Your link is ready:";
-                }
-            } catch (e) {
-                alert("Error: Cannot reach the backend. Wait 30 seconds for Railway to finish deploying.");
-            }
-        }
+        const data = await response.json();
+        resArea.style.display = 'block';
+        finalLink.href = data.short_url;
+        finalLink.innerText = data.short_url;
+        statusMsg.innerHTML = "✅ Success: Your link is ready!";
+        
+    } catch (e) {
+        alert("Connection error. Check your Railway Service 'Variables' for PORT=8000.");
+    }
+}
     </script>
 </body>
 </html>
