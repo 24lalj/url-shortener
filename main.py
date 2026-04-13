@@ -41,7 +41,8 @@ async def redirect_url(short_code: str):
         return RedirectResponse(url=url)
     raise HTTPException(status_code=404)
 
-# ADD THIS PART AT THE BOTTOM
+# MANDATORY FOR RAILWAY:
 if __name__ == "__main__":
+    # Railway provides the port via an environment variable
     port = int(os.environ.get("PORT", 8000))
     uvicorn.run(app, host="0.0.0.0", port=port)
