@@ -1,33 +1,41 @@
-async function process() {
-    const url = document.getElementById('urlInput').value;
-    const resArea = document.getElementById('resultArea');
-    const statusMsg = document.getElementById('statusMsg');
-    const finalLink = document.getElementById('finalLink');
+<script>
+    async function process() {
+        const url = document.getElementById('urlInput').value;
+        const resArea = document.getElementById('resultArea');
+        const statusMsg = document.getElementById('statusMsg');
+        const finalLink = document.getElementById('finalLink');
 
-    if(!url) return alert("Please enter a URL first!");
+        if(!url) return alert("Please enter a URL first!");
 
-    try {
-        // CHANGED: We use a relative path '/shorten' instead of 'http://localhost:8000/shorten'
-        // This makes the browser talk to your Railway domain automatically
-        const response = await fetch(`/shorten?long_url=${encodeURIComponent(url)}`, {
-            method: 'POST'
-        });
-        
-        const data = await response.json();
+        try {
+            // CHANGED: Using a relative path '/shorten' makes the app work on Railway automatically
+            const response = await fetch(`/shorten?long_url=${encodeURIComponent(url)}`, {
+                method: 'POST'
+            });
+            
+            const data = await response.json();
 
-        resArea.style.display = 'block';
-        finalLink.href = data.short_url;
-        finalLink.innerText = data.short_url;
+            resArea.style.display = 'block';
+            
+            // The Python backend now provides the full correct URL
+            finalLink.href = data.short_url;
+            finalLink.innerText = data.short_url;
 
-        if(data.is_spam) {
-            resArea.className = 'spam-alert';
-            statusMsg.innerHTML = "⚠️ <strong>Spam Warning:</strong> This URL looks suspicious:";
-        } else {
-            resArea.className = 'safe-alert';
-            statusMsg.innerHTML = "✅ <strong>Success:</strong> Smart URL generated successfully:";
+            if(data.is_spam) {
+                resArea.className = 'spam-alert';
+                statusMsg.innerHTML = "⚠️ <strong>Spam Warning:</strong> This URL looks suspicious, but we shortened it anyway:";
+            } else {
+                resArea.className = 'safe-alert';
+                statusMsg.innerHTML = "✅ <strong>Success:</strong> Smart URL generated successfully:";
+            }
+        } catch (e) {
+            // Updated error message for cloud environment
+            alert("Connection error. Ensure your Railway service is 'Online'.");
         }
-    } catch (e) {
-        // This error appears if the frontend can't reach the backend
-        alert("Connection error. Ensure your Railway service is 'Online'.");
     }
-}
+
+    function resetForm() {
+        document.getElementById('urlInput').value = '';
+        document.getElementById('resultArea').style.display = 'none';
+    }
+</script>
