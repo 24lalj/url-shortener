@@ -2,6 +2,7 @@ import hashlib
 import redis
 import validators
 import os
+import uvicorn
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import RedirectResponse, FileResponse
 from fastapi.middleware.cors import CORSMiddleware
@@ -18,47 +19,29 @@ app.add_middleware(
 # Redis Connection
 cache = redis.Redis(host='redis', port=6379, decode_responses=True)
 
-SPAM_KEYWORDS = ["free", "win", "money", "prize", "gift", "claim", "offer"]
-
-def is_spam(url: str) -> bool:
-    return any(keyword in url.lower() for keyword in SPAM_KEYWORDS)
-
-def generate_smart_code(url: str) -> str:
-    clean_url = url.replace("https://", "").replace("http://", "").replace("www.", "")
-    keyword = clean_url.split('.')[0] 
-    unique_suffix = hashlib.md5(url.encode()).hexdigest()[:4]
-    return f"{keyword}-{unique_suffix}"
-
 @app.get("/")
 async def read_index():
-    # This logic forces the server to look in the exact folder where the code is running
-    base_path = os.path.dirname(os.path.abspath(__file__))
-    file_path = os.path.join(base_path, "index.html")
-    if os.path.exists(file_path):
-        return FileResponse(file_path)
-    return {"error": f"File not found at {file_path}. Ensure index.html is in the same folder as main.py"}
+    file_path = os.path.join(os.path.dirname(__file__), "index.html")
+    return FileResponse(file_path)
 
 @app.post("/shorten")
 async def shorten_url(long_url: str, request: Request):
     if not validators.url(long_url):
-        raise HTTPException(status_code=400, detail="Invalid URL format")
-
-    spam_detected = is_spam(long_url)
+        raise HTTPException(status_code=400, detail="Invalid URL")
+    
     base_url = str(request.base_url)
-
-    cached_code = cache.get(f"url:{long_url}")
-    if cached_code:
-        return {"short_url": f"{base_url}{cached_code}", "is_spam": spam_detected}
-
-    short_code = generate_smart_code(long_url)
+    short_code = hashlib.md5(long_url.encode()).hexdigest()[:6]
     cache.set(short_code, long_url)
-    cache.set(f"url:{long_url}", short_code)
-
-    return {"short_url": f"{base_url}{short_code}", "is_spam": spam_detected}
+    return {"short_url": f"{base_url}{short_code}"}
 
 @app.get("/{short_code}")
 async def redirect_url(short_code: str):
-    original_url = cache.get(short_code)
-    if original_url:
-        return RedirectResponse(url=original_url)
-    raise HTTPException(status_code=404, detail="URL not found")
+    url = cache.get(short_code)
+    if url:
+        return RedirectResponse(url=url)
+    raise HTTPException(status_code=404)
+
+# ADD THIS PART AT THE BOTTOM
+if __name__ == "__main__":
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
