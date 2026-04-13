@@ -1,78 +1,33 @@
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <title>Intelligent URL Shortener Dashboard</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 15px 35px rgba(0,0,0,0.2); width: 100%; max-width: 500px; text-align: center; }
-        h1 { color: #2d3436; margin-bottom: 10px; font-size: 28px; }
-        p { color: #636e72; margin-bottom: 30px; }
-        .input-box { width: 100%; padding: 15px; border: 2px solid #dfe6e9; border-radius: 10px; font-size: 16px; margin-bottom: 20px; box-sizing: border-box; transition: 0.3s; }
-        .input-box:focus { border-color: #6c5ce7; outline: none; }
-        .button-group { display: flex; gap: 10px; }
-        button { flex: 1; padding: 15px; border: none; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s; }
-        .btn-shorten { background: #6c5ce7; color: white; }
-        .btn-shorten:hover { background: #5b4bc4; }
-        .btn-new { background: #f1f2f6; color: #2d3436; }
-        .btn-new:hover { background: #dfe6e9; }
-        #resultArea { margin-top: 30px; padding: 20px; border-radius: 12px; display: none; text-align: left; }
-        .spam-alert { background: #fff3cd; border: 1px solid #ffeeba; color: #856404; }
-        .safe-alert { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
-        .link-text { font-weight: bold; word-break: break-all; color: #0984e3; text-decoration: none; display: block; margin-top: 10px; font-size: 18px; }
-    </style>
-</head>
-<body>
-    <div class="card">
-        <h1>🔗 URL Shortener</h1>
-        <p>Intelligent Processing Layer & MLOps System</p>
-        <input type="text" id="urlInput" class="input-box" placeholder="https://example.com/very-long-link">
-        <div class="button-group">
-            <button class="btn-shorten" onclick="process()">Shorten Now</button>
-            <button class="btn-new" onclick="resetForm()">+ New URL</button>
-        </div>
-        <div id="resultArea">
-            <div id="statusMsg"></div>
-            <a id="finalLink" class="link-text" target="_blank"></a>
-        </div>
-    </div>
+async function process() {
+    const url = document.getElementById('urlInput').value;
+    const resArea = document.getElementById('resultArea');
+    const statusMsg = document.getElementById('statusMsg');
+    const finalLink = document.getElementById('finalLink');
 
-    <script>
-        async function process() {
-            const url = document.getElementById('urlInput').value;
-            const resArea = document.getElementById('resultArea');
-            const statusMsg = document.getElementById('statusMsg');
-            const finalLink = document.getElementById('finalLink');
+    if(!url) return alert("Please enter a URL first!");
 
-            if(!url) return alert("Please enter a URL first!");
+    try {
+        // CHANGED: We use a relative path '/shorten' instead of 'http://localhost:8000/shorten'
+        // This makes the browser talk to your Railway domain automatically
+        const response = await fetch(`/shorten?long_url=${encodeURIComponent(url)}`, {
+            method: 'POST'
+        });
+        
+        const data = await response.json();
 
-            // Updated to use your Render address
-            const serverUrl = "https://url-shortener-zo8z.onrender.com";
+        resArea.style.display = 'block';
+        finalLink.href = data.short_url;
+        finalLink.innerText = data.short_url;
 
-            try {
-                const response = await fetch(`${serverUrl}/shorten?long_url=${encodeURIComponent(url)}`, {method:'POST'});
-                const data = await response.json();
-
-                resArea.style.display = 'block';
-                finalLink.href = data.short_url;
-                finalLink.innerText = data.short_url;
-
-                if(data.is_spam) {
-                    resArea.className = 'spam-alert';
-                    statusMsg.innerHTML = "⚠️ <strong>Spam Warning:</strong> This URL looks suspicious, but we shortened it anyway:";
-                } else {
-                    resArea.className = 'safe-alert';
-                    statusMsg.innerHTML = "✅ <strong>Success:</strong> Smart URL generated successfully:";
-                }
-            } catch (e) {
-                alert("Server not responding. Ensure the Render service is live.");
-            }
+        if(data.is_spam) {
+            resArea.className = 'spam-alert';
+            statusMsg.innerHTML = "⚠️ <strong>Spam Warning:</strong> This URL looks suspicious:";
+        } else {
+            resArea.className = 'safe-alert';
+            statusMsg.innerHTML = "✅ <strong>Success:</strong> Smart URL generated successfully:";
         }
-
-        function resetForm() {
-            document.getElementById('urlInput').value = '';
-            document.getElementById('resultArea').style.display = 'none';
-        }
-    </script>
-</body>
-</html>
+    } catch (e) {
+        // This error appears if the frontend can't reach the backend
+        alert("Connection error. Ensure your Railway service is 'Online'.");
+    }
+}
