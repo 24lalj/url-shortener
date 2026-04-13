@@ -28,32 +28,35 @@
     </div>
 
     <script>
-       async function process() {
-    const url = document.getElementById('urlInput').value;
-    const resArea = document.getElementById('resultArea');
-    const statusMsg = document.getElementById('statusMsg');
-    const finalLink = document.getElementById('finalLink');
+      
+    async function process() {
+        const url = document.getElementById('urlInput').value;
+        const resArea = document.getElementById('resultArea');
+        const statusMsg = document.getElementById('statusMsg');
+        const finalLink = document.getElementById('finalLink');
 
-    if(!url) return alert("Please enter a URL!");
+        if(!url) return alert("Please enter a URL!");
 
-    try {
-        // Use relative path so it works on the Railway domain automatically
-        const response = await fetch(`/shorten?long_url=${encodeURIComponent(url)}`, { 
-            method: 'POST' 
-        });
-        
-        if (!response.ok) throw new Error("Server Error");
+        try {
+            // RELATIVE PATH: We removed 'http://localhost:8000'
+            // This makes the browser talk to the Railway server directly
+            const response = await fetch(`/shorten?long_url=${encodeURIComponent(url)}`, { 
+                method: 'POST' 
+            });
+            
+            if (!response.ok) throw new Error("Server Error");
 
-        const data = await response.json();
-        resArea.style.display = 'block';
-        finalLink.href = data.short_url;
-        finalLink.innerText = data.short_url;
-        statusMsg.innerHTML = "✅ Success: Your link is ready!";
-        
-    } catch (e) {
-        alert("Connection error. Check your Railway Service 'Variables' for PORT=8000.");
+            const data = await response.json();
+            resArea.style.display = 'block';
+            finalLink.href = data.short_url;
+            finalLink.innerText = data.short_url;
+            statusMsg.innerHTML = "✅ Success: Your link is ready!";
+            
+        } catch (e) {
+            alert("Error: Still can't reach backend. Ensure you pushed the newest main.py to GitHub.");
+        }
     }
-}
+
     </script>
 </body>
 </html>
